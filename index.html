@@ -1,0 +1,704 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Continuous Security in DevOps</title>
+
+		<meta name="author" content="Julien Vehent">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/beige.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+
+				<section>
+                    <h1>Securing Your Website</h1>
+                    <h2>A hands-on guide to staying out of<br />(the wrong kind of) news</h2>
+                    <br /><br />
+                    <h3>Julien Vehent<br />Mozilla</h3>
+                    <br /><br />
+                    <!-- <p style="font-size:0.5em;">tip: navigate with left/right arrows</p> -->
+                </section>
+
+                <section>
+                    <h2>$whoami</h2>
+                    <table>
+                        <tr>
+                            <td>
+                                <img src="statics/id2015.JPG" width="500" />
+                            </td>
+                            <td style="vertical-align:middle">
+                                <ul>
+                                    <li>Manage the team that runs Operations Security for Firefox</li>
+                                    <li>Protector of Firefox's infrastructure</li>
+                                    <li>Security tools coder</li>
+                                    <li>@jvehent on twitter</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </table>
+                </section>
+
+                <section>
+                    <img src="statics/Vehent-SDO-MEAP-HI.png" />
+                </section>
+
+                <section>
+                    <h2>Web Application Security</h2>
+                    <h3>in four steps</h3>
+                    <ol>
+                        <li>Content Injection</li>
+                        <li>Accepting User Generated Content</li>
+                        <li>Cookie Security</li>
+                        <li>Authenticating users</li>
+                        <li>HTTPS</li>
+                        <li>Testing Security</li>
+                    </ol>
+                </section>
+               
+                <section>
+                    <h2>Let's take a random target...</h2>
+                    <img src="statics/4chan.png" />
+                </section>
+
+                <section>
+                    <h2>Like most website, it has a few issues</h2>
+                    <img src="statics/observatory.png" />
+                </section>
+
+                <section>
+                    <h2>Content Injection</h2>
+                    <p>Hacker's favorite way to blow up your webapps since....<br />pretty much forever.</p>
+                    <img src="statics/samy.jpg" />
+                </section>
+
+                <section>
+                    <h2>Cross-Site Scripting</h2>
+                    <p><em>Cross-site scripting (XSS) is a security exploit which allows an attacker to inject into a website malicious client-side code. This code is executed by the victims and lets the attackers bypass access controls and impersonate users.</em></p>
+                </section>
+
+                <section>
+                    <h2>Cross-Site Scripting</h2>
+                    <pre><code data-trim data-noescape>
+&lt;script type='text/javascript'&gt;alert('xss');&lt;/script&gt;
+                    </code></pre>
+                    <img src="statics/xss.png" />
+                </section>
+
+                <section>
+                    <h2>Cross-Site Scripting</h2>
+                    <img src="statics/xss_at_mozilla.png" />
+                </section>
+
+                <section>
+                    <h2>Content Security Policy</h2>
+                    <h3>the XSS remedy</h3>
+                    <pre><code data-trim data-noescape>
+Content-Security-Policy: default-src *; object-src 'none'
+                    </code></pre>
+                    <p>Disable the use of unsafe inline/eval,<br />allow everything else except plugin execution.</p>
+                </section>
+
+                <section>
+                    <h2>CSP in your application</h2>
+                    <pre><code data-trim data-noescape>
+func setResponseHeaders() Middleware {
+  return func(h http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    
+      w.Header().Add("Content-Security-Policy",
+                     "default-src *; object-src 'none'")
+
+      w.Header().Add("X-XSS-Protection",
+                     "1; mode=block")
+
+      h.ServeHTTP(w, r)
+    })
+  }
+}
+                    </code></pre>
+                    <p>You need to return the CSP header on <strong>every</strong> HTTP response.</p>
+                </section>
+
+                <section>
+                    <h2>Accepting user generated content</h2>
+                    <img src="statics/yelpcritic.gif" />
+                </section>
+
+                <section>
+                    <h2>Accepting user generated content</h2>
+                    <p>This is easy: <strong>DON'T REFLECT IT ON YOUR MAIN ORIGIN!</strong></p>
+                    <p>Put user generated data on a separate domain that doesn't have cookies, and insert it on your main site with an iFrame.</p>
+                    <p>This prevents UGC from having access to the origin.</p>
+                </section>
+
+                <section>
+                    <h2>Accepting user generated content</h2>
+                    <img src="statics/iframe-ugc.svg" />
+                    <p>This is (partly) why Facebook puts user images on "fbcdn.net"</p>
+                </section>
+
+                <section>
+                    <h2>Cookie Security</h2>
+                    <p>Cookies are well protected in the browser, if you use them the right way. A few rule of thumb:
+                    <ol>
+                        <li>Don't let Javascript read them, set the HTTPOnly flag</li>
+                        <li>Don't send them in clear, set the Secure flag</li>
+                        <li>Use sensible expiration via Expires or Max-Age</li>
+                        <li>Don't send them around, set SameSite=Strict</li>
+                    </ol></p>
+                </section>
+
+                <section>
+                    <h2>Cookie Security</h2>
+                    <h3>Wait... what was that last one?</h3>
+                    <p>SameSite is a new cookie attribute that tells the browser to only send the cookie back to the origin is was set from.</p>
+                </section>
+
+                <section>
+                    <h2>Cookie Security</h2>
+                    <p>SameSite prevents third-party sites from forcing you to send requests with your cookies. It's like a CSRF token, only nicer.</p>
+                    <img src="statics/csrf.png" />
+                </section>
+
+                <section>
+                    <h2>Authenticating Users</h2>
+                    <p>Don't store user passwords, don't end up on this list.</p>
+                    <img src="statics/haveibeenpwned.png" />
+                </section>
+
+                <section>
+                    <h2>Authenticating Users</h2>
+                    <p>Let someone else do identity management for you.</p>
+                    <img src="statics/oidc_providers.png" />
+                </section>
+
+                <section>
+                    <h2>Authenticating Users</h2>
+                    <p>Benefits of delegating identity management:
+                    <ul>
+                        <li>No more passwords in your database</li>
+                        <li>Most providers support two-factor authentication already</li>
+                        <li>Most providers will do fraud detection</li>
+                        <li>Users don't have to remember 3,719 passwords</li>
+                    </ul>
+                    </p>
+                </section>
+
+                <section>
+                    <h2>Dependencies</h2>
+                    <p>If you're going to pull half the internet into your code,<br />at least make sure it's up to date.</p>
+                    <img src="statics/requirements.io.png" />
+                </section>
+
+                <section>
+                    <h2>Dependencies testing tools</h2>
+                    <ol>
+                        <li>Nodejs: greenkeeper.io</li>
+                        <li>Python: pyup.io</li>
+                        <li>Snyk.io covers npm, pip, maven and rubygem</li>
+                    </ol>
+                </section>
+                
+                <section>
+                    <h2>HTTPS</h2>
+                </section>
+
+                <section>
+                    <h2>When TLS config test fails, we direct ops to the config generator</h2>
+                    <img src="statics/tls-config-gen.png" />
+                </section>
+
+                <section>
+                    <h2>Testing Security</h2>
+                    <p>Four main types of security tests:
+                    <ol>
+                        <li>Web application vulnerability scanning</li>
+                        <li>Fuzzing</li>
+                        <li>Static Code Analysis</li>
+                        <li>Relying on external researchers</li>
+                    </ol>
+                </section>
+
+                <section>
+                    <h2>Web application vulnerability scanning</h2>
+                    <p>Automated tools that spider your website and apply series of tests to each resource discovered.</p>
+                    <img src="statics/12.4 ZAP Scan annotated.png" />
+                </section>
+
+                <section>
+                    <h2>Web application vulnerability scanning</h2>
+                    <p>Spidering/Discovering all resources can be hard (particularly on modern webapps), so another option is to proxy browser traffic through the scanner.</p>
+                    <img src="statics/12.5 ZAP Proxy.png" />
+                </section>
+
+
+                <section>
+                    <h2>Fuzzing</h2>
+                    <p>Inject junk into the interfaces of an app to make it crash.</p>
+                    <img src="statics/12.6 ZAP Fuzzing annotated.png" />
+                </section>
+
+                <section>
+                    <h2>Static Code Analysis</h2>
+                    <p>Analyse the source code for security issues.</p>
+                    <pre><code data-trim data-noescape>
+$ bandit -r src/github.com/Kinto/kinto
+
+Severity: High   Confidence: High
+Location: src/github.com/Kinto/kinto/kinto/plugins/accounts/scripts.py:36
+
+>> Issue: [B322:blacklist] The input method in Python 2 will read from
+standard input, evaluate and run the resulting string as python source
+code. This is similar, though in many ways worse, then using eval.
+On Python 2, use raw_input instead, input is safe in Python 3.
+
+35  print('Username should match {0!r}, please try again.'.format(validator.regexp))
+36  username = input('Username: ')
+                    </code></pre>
+                    <p>Static code analysers exist for many languages: bandit for python, eslint for javascript, gas for golang, etc.</p>
+                </section>
+
+                <section>
+                    <h2>Drive your security testing from continuous integration</h2>
+                    <img src="statics/zap_ci.png" style="border:0;"/>
+                    <p>Don't deploy to prod unless the security tests pass in dev.</p>
+                </section>
+
+                <section>
+                    <h2>ZAP example in CircleCI</h2>
+                    <pre><code data-trim data-noescape>
+test:
+  override:
+    - docker run mozilla/cutefox
+        background: true
+
+    # pull down the ZAP docker container
+    - docker pull owasp/zap2docker-weekly
+
+    # Run ZAP against the application
+    - >
+        docker run -t owasp/zap2docker-weekly zap-baseline.py 
+        -t http://172.17.0.2:8080/
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>Pass/Fail output, like unit tests</h2>
+                    <pre><code data-trim data-noescape>
+PASS: Absence of Anti-CSRF Tokens [40014]
+
+WARN: Web Browser XSS Protection Not Enabled [10016] x 3
+    http://172.17.0.2:8080/
+    http://172.17.0.2:8080//robots.txt
+    http://172.17.0.2:8080//sitemap.xml
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>Relying on external researchers</h2>
+                    <p>At a minimum, have a bug bounty program!</p>
+                    <img src="statics/12.12 Bug Bounty Payouts.png" />
+                </section>
+
+                <section>
+                    <h2>Relying on external researchers</h2>
+                    <p>As soon as you have the budget, hire specialists to audit your website. Ideally, make that report public too.</p>
+                    <img src="statics/fxa_audit.png" />
+                </section>
+
+
+                <section>
+                    <h2>How about securing your servers?</h2>
+                    <h3>Must you really?</h3>
+                    <p>Unless you're a big shop, it's much safer to outsource:<br />Heroku, AWS ElasticBeanstalk, Google Cloud, etc.</p>
+                </section>
+
+                <section>
+                    <h2>To learn more about web application security</h2>
+                    <ol>
+                        <li>Mozilla's Web Security Guidelines: <a href="https://wiki.mozilla.org/Security/Guidelines/Web_Security">wiki.mozilla.org/Security/Guidelines/Web_Security</a></li>
+                        <li>Firefox's Operations Security Checklist: <a href="https://wiki.mozilla.org/Security/FirefoxOperations#Security_Checklist">wiki.mozilla.org/Security/FirefoxOperations</a></li>
+                    </ol>
+                </section>
+
+                <section>
+                    <h1>Thank you</h1>
+                    <img src="statics/firefox_2017_logo.jpg" width=400/>
+                </section>
+
+                <section>
+                    <h2></h2>
+                </section>
+
+                <section>
+                    <h2></h2>
+                </section>
+
+                <section>
+                    <h2></h2>
+                </section>
+
+                <section>
+                    <h2></h2>
+                </section>
+
+                <section>
+                    <h2></h2>
+                </section>
+
+                <section>
+                    <h2>Meet Samantha</h2>
+                    <img src="statics/sam.svg" style="border:0;" width="20%"/>
+                    <p>She's a Full Stack developer</p>
+                </section>
+
+                <section>
+                    <h2>Sam used to work @slowcorp</h2>
+                    <img src="statics/sam_sad.svg" style="border:0;" width="10%"/>
+                    <p>She didn't like it much</p>
+                    <ul>
+                        <li>Internal private repos</li>
+                        <li>Manual deployment by ops, would take weeks</li>
+                        <li>Different platform between dev &amp; prod</li>
+                        <li>No access to cool tools everyone else uses</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>Speed matters</h2>
+                    <p>Traditional ops where deployments take entire weeks<br />aren't acceptable anymore.</p>
+                    <p>To compete, startups need fast release cycles.</p>
+                    <br />
+                    <p><span style="color: red;">15min from patch to prod</span> is the new standard!</p>
+                </section>
+
+                <section>
+                    <h2>Sam now works at Mozilla</h2>
+                    <img src="statics/sam_happy.svg" style="border:0;" width="20%"/>
+                    <p>She gets to use all the cool stuff!</p>
+                </section>
+
+                <section>
+                    <h2>What's the cool stuff</h2>
+                    <ul>
+                        <li>Code in public Github repo</li>
+                        <li>Circle/Travis CI to run tests</li>
+                        <li>Docker to build and deploy applications</li>
+                        <li>Continuous Deployment via Jenkins in AWS</li>
+                        <li>Logs in Kibana, monitoring in Datadog</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <img src="statics/deploy.png" style="border:0;" />
+                </section>
+
+                <section>
+                    <h2>In an ideal world, all deploys are automated and instantaneous</h2>
+                    <p>in the real world, we're not quite there yet, but you get the point</p>
+                </section>
+
+                <section>
+                    <h2>Security versus DevOps</h2>
+                    <h3>aka. <em>The Wrong way</em></h3>
+                    <ul>
+                        <li>DevOps team optimizes for fast iterations</li>
+                        <li>Security team optimizes for fewer incidents</li>
+                    </ul>
+                    <p>Both sides typically work against each other, actively arming both the roadmap and security of the product</p>
+                </section>
+
+                <section>
+                    <h2>Security <b>into</b> DevOps</h2>
+                    <ol>
+                        <li>Test Driven Security (TDS) integrated into the delivery pipeline. Use security tests to gradual improve application &amp; infrastructure security.</li>
+                        <li>Monitoring &amp; blocking attacks, via fraud detection techniques and incident response.</li>
+                        <li>Managing risks throughout the life-cycle of the service.</li>
+                    </ol>
+                </section>
+
+
+                <section>
+                    <h2>Continuous Security at Mozilla</h2>
+                    <p>Walkthrough through the life-cycle of a project, from inception to retirement</p>
+                </section>
+
+                <section>
+                    <h2>Sam is building a new service</h2>
+                    <img src="statics/sam_happy.svg" style="border:0;" width="20%"/>
+                    <p>CuteFox: a REST API that sends webpush notifications to Firefox users with photos of cute foxes.</p>
+                </section>
+
+                <section>
+                    <img src="statics/6861697-baby-fox-wallpaper.jpg"/>
+                </section>
+
+                <section>
+                    <h2>When the project starts,<br />we talk risk together</h2>
+                    <h3>RRA: Rapid Risk Assessment</h3>
+                    <p>A ~30min <b>friendly</b> discussion between the devs, ops, products managers and security team to go over the business risks of the project</p>
+                </section>
+
+                <section>
+                    <h2>done remotely!</h2>
+                    <img src="statics/vidyo.png" />
+                </section>
+
+                <section>
+                    <img src="statics/RRA.png" width="200%" />
+                    <p>A risk summary table from the RRA</p>
+                </section>
+
+                <section>
+                    <h2>RRA outputs recommendations</h2>
+                    <p>We capture those recommendation into a "Risk Summary" bug. The bug stays open for the lifetime of the service and serves as a tracker for security discussions related to the project</p>
+                </section>
+
+                <section>
+                    <h2>The project team understands the risks their project is exposed to.</h2>
+                </section>
+
+
+                <section>
+                    <h2>Sam goes coding</h2>
+                    <img src="statics/sam.svg" style="border:0;" width="20%"/>
+                </section>
+
+                <section>
+                    <h2>We help Sam avoid<br />common webapp vulnerabilities</h2>
+                    <ul>
+                        <li>Mozilla Web Security Guidelines<br /><a href="https://wiki.mozilla.org/Security/Guidelines/Web_Security">wiki.mozilla.org/Security/Guidelines/Web_Security</a></li> 
+                        <li>OWASP ZAP Scanning<br /><a href="https://github.com/zaproxy/zaproxy/wiki/ZAP-Baseline-Scan">github.com/zaproxy/ZAP-Baseline-Scan</a></li>
+                        <li>Require baseline security on all websites (CSP, Secure Cookies, TLS Only, ...)</li>
+                    </ul>
+                </section>
+                <section>
+                    <h2>We also ask Sam to<br />keep her app up to date</h2>
+                    <ul>
+                        <li>Node.JS: NSP, Greenkeeper.io</li>
+                        <li>Python: requires.io, pip --outdated</li>
+                        <li>Go: govend</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>TDS for dependency management</h2>
+                    <img src="statics/requires.io.png" />
+                </section>
+
+                <section>
+                    <h2>Developers own the operational security of their application</h2>
+                    <p>We don't bolt it on top with WAFs and so on, we build security into the app directly</p>
+                </section>
+
+                <section>
+                    <h2>Then we deploy</h2>
+                </section>
+
+                <section>
+                    <h2>Meet Max</h2>
+                    <img src="statics/max.svg" width="20%"/>
+                    <p>He's the Ops guy</p>
+                </section>
+
+                <section>
+                    <h2>Max has to write all the provisioning code</h2>
+                    <ul>
+                        <li>Build the AWS infra via cloudformation</li>
+                        <li>Setup the jenkins pipeline to for continuous deployment (Docker container deployed to EC2 instances with Jenkins, Ansible, Cloudformation and Puppet).</li>
+                        <li>He often helps the devs make architecture decisions, like how to use CDNs, caching, etc...</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <img src="statics/onedoesnotsimply.jpg" />
+                </section>
+
+                <section>
+                    <h2>We help Max with tools...</h2>
+                    <ul>
+                        <li>Managing secrets (<a href="https://github.com/mozilla/sops">SOPS</a>) to prevent leaks</li>
+                        <li>Configuring good TLS on endpoints (<a href="https://github.com/mozilla/tls-observatory">TLS Observatory</a>)</li>
+                        <li>Disabling users that have left the company (<a href="https://github.com/mozilla-services/userplex">Userplex</a>)</li>
+                        <li>Building crypto services so services don't have to manage keys (<a href="https://github.com/mozilla-services/autograph">Autograph</a>)</li>
+                    </ul>
+                    <h2>and Guidelines</h2>
+                    <ul>
+                        <li>Require that admin panel must be placed behind VPN</li>
+                        <li>Perform audits and incident response training with the teams</li>
+                    </ul>
+                    <p>etc...</p>
+                </section>
+
+                <section>
+                    <h2>Sec team builds solutions<br />to help DevOps</h2>
+                    <ol>
+                        <li>Dev or Ops come see us with a problem</li>
+                        <li>We discuss it together</li>
+                        <li>Sec or Dev team builds a solution that solve the issue</li>
+                        <li>We generalize it so other teams can benefit as well</li>
+                    </ol>
+                </section>
+
+                <section>
+                    <h2>Example: storing secrets in git</h2>
+                    <p>Problem: secrets in cleartext files have a bad tendency to leak</p>
+                    <p>Solution: SOPS - encrypt all credentials, decrypt at provisioning</p>
+                    <pre><code data-trim data-noescape>
+# The secrets below are unreadable without access to one of the sops master key
+myapp1: ENC[AES256_GCM,data:QsGJGjvQOpoVCIlrYTcOQEfQzriw,iv:ShmgdRNV6UrOJ22Rgr7habB74Nd/YFxU4lDh6jy6n+8=,tag:8GT6U8lzrI27DcFc1+icgQ==,type:str]
+app2:
+    db:
+        user: ENC[AES256_GCM,data:Arbb,iv:7bjm4ZaVFlxNk3O4M1P67TqfFtXTOHOe5x9rjF6/R9o=,tag:d4+O8BUj+02qaeJorev2ww==,type:str]
+        password: ENC[AES256_GCM,data:9/jSxNCq0A==,iv:5mk+GS016hKGj6gVfQDMSyuuPy7/SVHLsqQXK3p1nds=,tag:AtK4nPFoSOOgdw6IZmiZmw==,type:str]
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>Test Driven Security for the infrastructure</h2>
+                    <ul>
+                        <li>Test the TLS configuration daily (certificate, ciphersuites, ...)</li>
+                        <li>[future] Test security groups with <a href="https://github.com/mozilla/build-fwunit">mozilla/build-fwunit</a></li>
+                        <li>[future] Test AWS IAM policies</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>Example: Testing TLS configuration</h2>
+                    <pre><code data-trim data-noescape>
+$ tlsobs addons.mozilla.org
+
+[...]
+
+--- Analyzers ---
+* Mozilla evaluation: intermediate
+  - for modern level: remove ciphersuites ECDHE-RSA-AES128-SHA, ECDHE-RSA-AES256-SHA, AES128-GCM-SHA256, AES128-SHA256, AES128-SHA, AES256-GCM-SHA384, AES256-SHA256, AES256-SHA, DES-CBC3-SHA
+  - for modern level: consider adding ciphers ECDHE-ECDSA-AES256-GCM-SHA384, ECDHE-ECDSA-CHACHA20-POLY1305, ECDHE-RSA-CHACHA20-POLY1305, ECDHE-ECDSA-AES128-GCM-SHA256, ECDHE-ECDSA-AES256-SHA384, ECDHE-ECDSA-AES128-SHA256
+  - for modern level: remove protocols TLSv1, TLSv1.1
+  - for modern level: consider enabling OCSP stapling
+  - for modern level: use a certificate of type ecdsa, not RSA
+  - oldest clients: Firefox 1, Chrome 1, IE 7, Opera 5, Safari 1, Windows XP IE8, Android 2.3, Java 7
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>It's launch day! Foxes Everywhere!</h2>
+                    <img src="statics/launch_day.png" />
+                </section>
+
+                <section>
+                    <h2>Until bad guys start attacking CuteFox</h2>
+                    <img src="statics/hell.jpg" />
+                </section>
+
+                <section>
+                    <h2>Incident Response</h2>
+                    <h3>No one in the DevOps team sleeps until the fire is out</h3>
+                    <img src="statics/fireman.jpg" />
+                </section>
+
+                <section>
+                    <h2>Incidents suck</h2>
+                    <p>but they are great for</p>
+                    <ul>
+                        <li>Team building: Nothing like going through hell together to build trust!</li>
+                        <li>Roadmaps: Incidents <b>always</b> bump up the priority of security features.</li>
+                        <li>Security maturity: no amount of testing compares to an incident to evaluate the reliability of a service.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>Continuous Security is a cycle</h2>
+                    <ol>
+                        <li>design new feature</li>
+                        <li>assess risks</li>
+                        <li>implement feature</li>
+                        <li>test security</li>
+                        <li>deploy</li>
+                        <li>get attacked</li>
+                        <li>fight back</li>
+                        <li>learn</li>
+                        <li>rinse and repeat</li>
+                    </ol>
+                </section>
+
+                <section>
+                    <h2>Security must be part of the Product</h2>
+                    <p>Not an afterthought built on top</h3>
+                    <ul>
+                        <li>Be a member of the DevOps team</li>
+                        <li>Understand the roadmap</li>
+                        <li>Share the successes</li>
+                        <li>Share the failures</li>
+                        <li>Write code that makes things better</li>
+                    </ul>
+                    <p>It's not SecDevOps, it's just DevOps.<br />Security is a natural component of it.</p>
+                </section>
+
+                <section>
+                    <h2>Thank You</h2>
+                    <img src="statics/firefox.png" width="50%" style="border:0;"/>
+                    <p>jvehent.github.io/continuous-security-talk</p>
+                </section>
+
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+            Reveal.configure({
+                slideNumber: true,
+                slideNumber: 'c/t',
+
+            });
+		</script>
+		<!-- Piwik -->
+		<script type="text/javascript">
+		  var _paq = _paq || [];
+		  _paq.push(["setDomains", ["*.securing-devops.com","*.jvehent.github.io/continuous-security-talk"]]);
+		  _paq.push(['trackPageView']);
+		  _paq.push(['enableLinkTracking']);
+		  (function() {
+			var u="//linuxwall.info/webstats/";
+			_paq.push(['setTrackerUrl', u+'piwik.php']);
+			_paq.push(['setSiteId', 5]);
+			var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+			g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+		  })();
+		</script>
+		<noscript><p><img src="//linuxwall.info/webstats/piwik.php?idsite=5" style="border:0;" alt="" /></p></noscript>
+		<!-- End Piwik Code -->
+
+	</body>
+</html>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="53cm" height="19cm" viewBox="130 33 1052 365" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <ellipse style="fill: #ffffff" cx="172" cy="209.826" rx="8.41304" ry="8.41304"/>
+    <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="172" cy="209.826" rx="8.41304" ry="8.41304"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="138.348" y1="226.652" x2="205.652" y2="226.652"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="172" y1="218.239" x2="172" y2="260.304"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="172" y1="260.304" x2="138.348" y2="299.174"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="172" y1="260.304" x2="205.652" y2="299.174"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="172" y="327.9">
+      <tspan x="172" y="327.9">Security</tspan>
+      <tspan x="172" y="343.9">Engineer</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="230" y="190" width="100" height="111"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="230" y="190" width="100" height="111"/>
+    <rect style="fill: #ffffff" x="230" y="170" width="57.9" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="230" y="170" width="57.9" height="20"/>
+    <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="232" y="184">Browser</text>
+  </g>
+  <image x="227" y="196" width="108.28" height="102" xlink:href="file:///home/ulfr/Documents/SecDevOps/CH02/firefox_logo.png"/>
+  <g>
+    <rect style="fill: #ffffff" x="474" y="159" width="195.55" height="145.05"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="474" y="159" width="195.55" height="145.05"/>
+    <rect style="fill: #ffffff" x="454" y="210.525" width="40" height="14"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="454" y="210.525" width="40" height="14"/>
+    <rect style="fill: #ffffff" x="454" y="238.525" width="40" height="14"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="454" y="238.525" width="40" height="14"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="502" y="184.9">
+      <tspan x="502" y="184.9">OWASP Zed Attack Proxy</tspan>
+      <tspan x="502" y="200.9"></tspan>
+      <tspan x="502" y="216.9"></tspan>
+      <tspan x="502" y="232.9"></tspan>
+      <tspan x="502" y="248.9"></tspan>
+      <tspan x="502" y="264.9"></tspan>
+      <tspan x="502" y="280.9"></tspan>
+      <tspan x="502" y="296.9"></tspan>
+    </text>
+  </g>
+  <image x="513" y="192" width="97" height="97" xlink:href="file:///home/ulfr/Documents/SecDevOps/CH03/figures/zap_logo.png"/>
+  <image x="821" y="67" width="360" height="329.657" xlink:href="file:///home/ulfr/Documents/SecDevOps/CH12/figures/nyt.png"/>
+  <text font-size="22.5778" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:700" x="824" y="54">
+    <tspan x="824" y="54">Target Website</tspan>
+  </text>
+  <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="839" y="57">
+    <tspan x="839" y="57"></tspan>
+  </text>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="341" y1="245" x2="444.264" y2="245.457"/>
+    <polygon style="fill: #000000" points="451.764,245.49 441.742,250.446 444.264,245.457 441.786,240.446 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="451.764,245.49 441.742,250.446 444.264,245.457 441.786,240.446 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="669.55" y1="231.5" x2="811.264" y2="231.807"/>
+    <polygon style="fill: #000000" points="818.764,231.823 808.753,236.801 811.264,231.807 808.775,226.802 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="818.764,231.823 808.753,236.801 811.264,231.807 808.775,226.802 "/>
+  </g>
+  <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="463" y="323">
+    <tspan x="463" y="323">HTTPS decrypted by interception</tspan>
+    <tspan x="463" y="339">proxy, traffic recorded and inspected</tspan>
+    <tspan x="463" y="355">by passive ruleset.</tspan>
+  </text>
+</svg>
